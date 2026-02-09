@@ -11,6 +11,11 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Plus, Lock, Unlock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +53,15 @@ export default function AdminPeriods() {
   const createPeriod = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!label || !startDate || !endDate) return;
+
+    if (new Date(endDate) <= new Date(startDate)) {
+      toast({
+        title: "Erreur",
+        description: "La date de fin doit être postérieure à la date de début.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setSubmitting(true);
     const { error } = await supabase.from("fiscal_periods").insert({
@@ -196,22 +210,41 @@ export default function AdminPeriods() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      onClick={() => togglePeriod(period.id, period.is_open)}
-                    >
-                      {period.is_open ? (
-                        <>
-                          <Lock className="h-4 w-4" /> Fermer
-                        </>
-                      ) : (
-                        <>
-                          <Unlock className="h-4 w-4" /> Ouvrir
-                        </>
-                      )}
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="outline" className="gap-1">
+                          {period.is_open ? (
+                            <>
+                              <Lock className="h-4 w-4" /> Fermer
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="h-4 w-4" /> Ouvrir
+                            </>
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {period.is_open ? "Fermer la période ?" : "Ouvrir la période ?"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {period.is_open
+                              ? `La fermeture de "${period.label}" gèlera les écritures comptables de cette période. Aucune modification ne sera possible.`
+                              : `L'ouverture de "${period.label}" fermera automatiquement toute autre période ouverte. Seule une période peut être active à la fois.`}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => togglePeriod(period.id, period.is_open)}
+                          >
+                            {period.is_open ? "Fermer" : "Ouvrir"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
