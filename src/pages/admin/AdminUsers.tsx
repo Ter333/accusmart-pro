@@ -161,6 +161,26 @@ export default function AdminUsers() {
     setSelectedRoles((prev) => ({ ...prev, [userId]: role }));
   };
 
+  const resetPassword = async (user: UserWithRole, newPassword: string) => {
+    setProcessing(user.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+        body: { user_id: user.user_id, new_password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: "Mot de passe réinitialisé",
+        description: `Le mot de passe de ${user.email} a été mis à jour. Communiquez-le à l'utilisateur.`,
+      });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+      throw err;
+    } finally {
+      setProcessing(null);
+    }
+  };
+
   return (
     <AppLayout title="Gestion des Utilisateurs">
       {loading ? (
@@ -181,6 +201,7 @@ export default function AdminUsers() {
             users={activeUsers}
             onDeactivate={deactivateUser}
             onReactivate={reactivateUser}
+            onResetPassword={resetPassword}
             processing={processing}
           />
         </div>
